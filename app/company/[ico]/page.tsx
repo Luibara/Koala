@@ -9,8 +9,13 @@ import {
   ExternalLink,
   Hash,
   AlertCircle,
+  Phone,
+  Globe,
+  Search,
+  Linkedin,
 } from 'lucide-react';
 import { getCompanyDetail, formatAddress, formatPersonName, getLegalFormLabel } from '@/lib/ares';
+import { findFirmyCz } from '@/lib/firmy';
 import type { AresRegistrace } from '@/types/company';
 
 interface Props {
@@ -53,6 +58,10 @@ export default async function CompanyDetailPage({ params }: Props) {
     notFound();
   }
 
+  // Fetch firmy.cz enrichment in parallel (fire and forget if it fails)
+  const city = company.sidlo?.nazevObce;
+  const firmyCz = await findFirmyCz(company.obchodniJmeno, city);
+
   const address = formatAddress(company.sidlo);
   const legalForm = getLegalFormLabel(company.pravniForma);
   const founded = company.datumVzniku
@@ -89,6 +98,14 @@ export default async function CompanyDetailPage({ params }: Props) {
   }
 
   const naceActivities = company.czNace ?? [];
+
+  // Find VR (Obchodní rejstřík) file number from dalsiUdaje
+  const dalsiUdaje = (company as unknown as { dalsiUdaje?: Array<{ datovyZdroj?: string; spisovaZnacka?: string }> }).dalsiUdaje;
+  const vrData = dalsiUdaje?.find((d) => d.datovyZdroj === 'vr');
+  const spisovaZnacka = vrData?.spisovaZnacka;
+
+  const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(company.obchodniJmeno + ' kontakt')}`;
+  const linkedinSearchUrl = `https://www.linkedin.com/search/results/companies/?keywords=${encodeURIComponent(company.obchodniJmeno)}`;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
@@ -131,46 +148,29 @@ export default async function CompanyDetailPage({ params }: Props) {
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left column — basic info */}
+          {/* Left column */}
           <div className="lg:col-span-1 space-y-4">
+            {/* Basic info */}
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5">
               <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
                 <Hash className="w-4 h-4 text-gray-400" />
                 Základní informace
               </h2>
-
-              <InfoRow
-                icon={<Hash className="w-4 h-4 text-gray-500" />}
-                label="IČO"
-                value={company.ico}
-              />
-              <InfoRow
-                icon={<Building2 className="w-4 h-4 text-gray-500" />}
-                label="Právní forma"
-                value={legalForm}
-              />
-              <InfoRow
-                icon={<MapPin className="w-4 h-4 text-gray-500" />}
-                label="Sídlo"
-                value={address}
-              />
+              <InfoRow icon={<Hash className="w-4 h-4 text-gray-500" />} label="IČO" value={company.ico} />
+              <InfoRow icon={<Building2 className="w-4 h-4 text-gray-500" />} label="Právní forma" value={legalForm} />
+              <InfoRow icon={<MapPin className="w-4 h-4 text-gray-500" />} label="Sídlo" value={address} />
               {company.sidlo?.nazevKraje && (
-                <InfoRow
-                  icon={<MapPin className="w-4 h-4 text-gray-500" />}
-                  label="Kraj"
-                  value={company.sidlo.nazevKraje}
-                />
+                <InfoRow icon={<MapPin className="w-4 h-4 text-gray-500" />} label="Kraj" value={company.sidlo.nazevKraje} />
               )}
               {founded && (
-                <InfoRow
-                  icon={<Calendar className="w-4 h-4 text-gray-500" />}
-                  label="Datum vzniku"
-                  value={founded}
-                />
+                <InfoRow icon={<Calendar className="w-4 h-4 text-gray-500" />} label="Datum vzniku" value={founded} />
+              )}
+              {spisovaZnacka && (
+                <InfoRow icon={<Hash className="w-4 h-4 text-gray-500" />} label="Spisová značka" value={spisovaZnacka} />
               )}
             </div>
 
-            {/* NACE activities */}
+            {/* NACE */}
             {naceActivities.length > 0 && (
               <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5">
                 <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
@@ -178,10 +178,7 @@ export default async function CompanyDetailPage({ params }: Props) {
                 </h2>
                 <div className="flex flex-wrap gap-2">
                   {naceActivities.slice(0, 8).map((code) => (
-                    <span
-                      key={code}
-                      className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2.5 py-1 rounded-full"
-                    >
+                    <span key={code} className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2.5 py-1 rounded-full">
                       {code}
                     </span>
                   ))}
@@ -192,43 +189,31 @@ export default async function CompanyDetailPage({ params }: Props) {
             {/* External links */}
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5">
               <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
-                Externí zdroje
+                Rejstříky
               </h2>
               <div className="space-y-2">
-                <a
-                  href={`https://ares.gov.cz/ekonomicke-subjekty-v-be/rest/ekonomicke-subjekty/${company.ico}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  ARES (raw data)
+                <a href={`https://ares.gov.cz/ekonomicke-subjekty-v-be/rest/ekonomicke-subjekty/${company.ico}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:underline">
+                  <ExternalLink className="w-3.5 h-3.5" /> ARES (raw data)
                 </a>
-                <a
-                  href={`https://or.justice.cz/ias/ui/rejstrik-firma.vysledky?subjektId=&typ=PLATNE&pf=&ico=${company.ico}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  Obchodní rejstřík
+                <a href={`https://or.justice.cz/ias/ui/rejstrik-firma.vysledky?subjektId=&typ=PLATNE&pf=&ico=${company.ico}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:underline">
+                  <ExternalLink className="w-3.5 h-3.5" /> Obchodní rejstřík
                 </a>
-                <a
-                  href={`https://www.rzp.cz/cgi-bin/aps_cacheWEB.sh?VSS_SERV=ZVWSBJVYP&SUBJID=${company.ico}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  Živnostenský rejstřík
+                <a href={`https://www.rzp.cz/cgi-bin/aps_cacheWEB.sh?VSS_SERV=ZVWSBJVYP&SUBJID=${company.ico}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:underline">
+                  <ExternalLink className="w-3.5 h-3.5" /> Živnostenský rejstřík
                 </a>
               </div>
             </div>
           </div>
 
-          {/* Right column — management */}
+          {/* Right column */}
           <div className="lg:col-span-2 space-y-4">
-            {/* Management & owners */}
+            {/* Management */}
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5">
               <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <Users className="w-4 h-4 text-gray-400" />
@@ -236,16 +221,13 @@ export default async function CompanyDetailPage({ params }: Props) {
               </h2>
 
               {allPeople.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                <div className="text-center py-6">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
                     Informace o vedení nejsou v ARES dostupné pro tuto firmu.
                   </p>
-                  <a
-                    href={`https://or.justice.cz/ias/ui/rejstrik-firma.vysledky?subjektId=&typ=PLATNE&pf=&ico=${company.ico}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 mt-3 text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                  >
+                  <a href={`https://or.justice.cz/ias/ui/rejstrik-firma.vysledky?subjektId=&typ=PLATNE&pf=&ico=${company.ico}`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline">
                     <ExternalLink className="w-3.5 h-3.5" />
                     Zobrazit v obchodním rejstříku
                   </a>
@@ -255,34 +237,21 @@ export default async function CompanyDetailPage({ params }: Props) {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-gray-200 dark:border-gray-700">
-                        <th className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 pb-2 uppercase tracking-wider">
-                          Jméno
-                        </th>
-                        <th className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 pb-2 uppercase tracking-wider">
-                          Funkce
-                        </th>
-                        <th className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 pb-2 uppercase tracking-wider hidden md:table-cell">
-                          Adresa
-                        </th>
+                        <th className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 pb-2 uppercase tracking-wider">Jméno</th>
+                        <th className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 pb-2 uppercase tracking-wider">Funkce</th>
+                        <th className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 pb-2 uppercase tracking-wider hidden md:table-cell">Adresa</th>
                       </tr>
                     </thead>
                     <tbody>
                       {allPeople.map((person, i) => (
-                        <tr
-                          key={i}
-                          className="border-b border-gray-100 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors"
-                        >
-                          <td className="py-3 font-medium text-gray-900 dark:text-white pr-4">
-                            {person.name || '—'}
-                          </td>
-                          <td className="py-3 text-gray-600 dark:text-gray-400 pr-4">
-                            <span className="inline-block text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full">
+                        <tr key={i} className="border-b border-gray-100 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors">
+                          <td className="py-3 font-medium text-gray-900 dark:text-white pr-4">{person.name || '—'}</td>
+                          <td className="py-3 pr-4">
+                            <span className="text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full">
                               {person.role}
                             </span>
                           </td>
-                          <td className="py-3 text-gray-500 dark:text-gray-400 text-xs hidden md:table-cell">
-                            {person.address ?? '—'}
-                          </td>
+                          <td className="py-3 text-gray-500 dark:text-gray-400 text-xs hidden md:table-cell">{person.address ?? '—'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -291,37 +260,96 @@ export default async function CompanyDetailPage({ params }: Props) {
               )}
             </div>
 
-            {/* Contact info disclaimer */}
-            <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
-              <div className="flex gap-3">
-                <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" />
-                <div>
-                  <h3 className="text-sm font-medium text-amber-800 dark:text-amber-400 mb-1">
-                    Kontaktní údaje
-                  </h3>
-                  <p className="text-xs text-amber-700 dark:text-amber-500 leading-relaxed">
-                    Telefonní čísla a emailové adresy nejsou součástí veřejných registrů (ARES,
-                    obchodní rejstřík) z důvodu GDPR. Pro kontaktní údaje doporučujeme{' '}
-                    <a
-                      href={`https://www.google.com/search?q=${encodeURIComponent(company.obchodniJmeno + ' kontakt')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline font-medium"
-                    >
-                      Google
-                    </a>
-                    ,{' '}
-                    <a
-                      href={`https://www.linkedin.com/search/results/companies/?keywords=${encodeURIComponent(company.obchodniJmeno)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline font-medium"
-                    >
-                      LinkedIn
-                    </a>{' '}
-                    nebo web firmy.
+            {/* Contact section */}
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5">
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <Phone className="w-4 h-4 text-gray-400" />
+                Kontaktní údaje
+              </h2>
+
+              {/* Firmy.cz match — if found */}
+              {firmyCz ? (
+                <div className="mb-4">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                    Nalezena shoda na <strong>Firmy.cz</strong> — největší česká firemní databáze s telefony, emaily a webem:
                   </p>
+                  <a
+                    href={firmyCz.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors group"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
+                      <Globe className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-blue-700 dark:text-blue-300 text-sm group-hover:underline">
+                        {firmyCz.sentence}
+                      </p>
+                      <p className="text-xs text-blue-600/70 dark:text-blue-400/70 truncate mt-0.5">
+                        {firmyCz.loc}
+                      </p>
+                    </div>
+                    <ExternalLink className="w-4 h-4 text-blue-500 shrink-0" />
+                  </a>
                 </div>
+              ) : (
+                <div className="mb-4 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/30 border border-gray-200 dark:border-gray-600">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Firma nebyla automaticky nalezena na Firmy.cz. Zkuste vyhledat ručně:
+                  </p>
+                  <a
+                    href={`https://www.firmy.cz/?query=${encodeURIComponent(company.obchodniJmeno)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 mt-2 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    Hledat na Firmy.cz
+                  </a>
+                </div>
+              )}
+
+              {/* Divider */}
+              <div className="border-t border-gray-100 dark:border-gray-700 my-4" />
+
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Další možnosti hledání:</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <a
+                  href={googleSearchUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm text-gray-700 dark:text-gray-300"
+                >
+                  <Search className="w-4 h-4 text-gray-400" />
+                  Google
+                </a>
+                <a
+                  href={linkedinSearchUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm text-gray-700 dark:text-gray-300"
+                >
+                  <Linkedin className="w-4 h-4 text-gray-400" />
+                  LinkedIn
+                </a>
+                <a
+                  href={`https://www.heureka.cz/?h%5Bfraze%5D=${encodeURIComponent(company.obchodniJmeno)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm text-gray-700 dark:text-gray-300"
+                >
+                  <ExternalLink className="w-4 h-4 text-gray-400" />
+                  Heureka
+                </a>
+              </div>
+
+              {/* GDPR notice */}
+              <div className="mt-4 flex gap-2.5 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800">
+                <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-700 dark:text-amber-500 leading-relaxed">
+                  Telefon a email nejsou součástí veřejných rejstříků (ARES, OR) z důvodu GDPR.
+                </p>
               </div>
             </div>
           </div>
