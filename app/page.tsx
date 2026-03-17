@@ -11,13 +11,6 @@ import LoadingSkeleton from '@/components/LoadingSkeleton';
 
 const PAGE_SIZE = 20;
 
-const SIZE_MAP: Record<CompanySize, string> = {
-  all: '',
-  micro: 'VS_1_9',
-  small: 'VS_10_49',
-  medium: 'VS_50_249',
-  large: 'VS_250_',
-};
 
 export default function HomePage() {
   const [query, setQuery] = useState('');
@@ -49,16 +42,17 @@ export default function HomePage() {
     const params = new URLSearchParams();
     if (q.trim()) params.set('query', q.trim());
     if (r) params.set('region', r);
-    if (SIZE_MAP[s]) params.set('size', SIZE_MAP[s]);
     params.set('page', String(p));
 
     try {
       const res = await fetch(`/api/companies?${params.toString()}`, {
         signal: abortRef.current.signal,
       });
-      if (!res.ok) throw new Error('Chyba při načítání dat z ARES');
-      const data: AresSearchResult = await res.json();
-      setResults(data);
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.message ?? 'Chyba při načítání dat z ARES');
+      }
+      setResults(data as AresSearchResult);
     } catch (err) {
       if ((err as Error).name === 'AbortError') return;
       setError(err instanceof Error ? err.message : 'Neznámá chyba');

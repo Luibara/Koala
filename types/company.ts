@@ -1,14 +1,14 @@
 export interface AresSidlo {
-  kodKraje?: string;
+  kodKraje?: number;
   nazevKraje?: string;
-  kodOkresu?: string;
+  kodOkresu?: number;
   nazevOkresu?: string;
-  kodObce?: string;
+  kodObce?: number;
   nazevObce?: string;
   nazevUlice?: string;
-  cisloDomovni?: string;
-  cisloOrientacni?: string;
-  psc?: string;
+  cisloDomovni?: number;
+  cisloOrientacni?: number;
+  psc?: number | string;
   textovaAdresa?: string;
 }
 
@@ -90,22 +90,23 @@ export interface SearchParams {
   page: number;
 }
 
+// Numeric kodKraje values from ARES (discovered empirically)
 export const REGIONS: Record<string, string> = {
   '': 'Celá ČR',
-  'CZ010': 'Praha',
-  'CZ020': 'Středočeský kraj',
-  'CZ031': 'Jihočeský kraj',
-  'CZ032': 'Plzeňský kraj',
-  'CZ041': 'Karlovarský kraj',
-  'CZ042': 'Ústecký kraj',
-  'CZ051': 'Liberecký kraj',
-  'CZ052': 'Královéhradecký kraj',
-  'CZ053': 'Pardubický kraj',
-  'CZ063': 'Kraj Vysočina',
-  'CZ064': 'Jihomoravský kraj',
-  'CZ071': 'Olomoucký kraj',
-  'CZ072': 'Zlínský kraj',
-  'CZ080': 'Moravskoslezský kraj',
+  '19': 'Praha',
+  '27': 'Středočeský kraj',
+  '35': 'Jihočeský kraj',
+  '43': 'Plzeňský kraj',
+  '51': 'Karlovarský kraj',
+  '60': 'Ústecký kraj',
+  '78': 'Liberecký kraj',
+  '86': 'Královéhradecký kraj',
+  '94': 'Pardubický kraj',
+  '108': 'Kraj Vysočina',
+  '116': 'Jihomoravský kraj',
+  '124': 'Olomoucký kraj',
+  '141': 'Zlínský kraj',
+  '132': 'Moravskoslezský kraj',
 };
 
 export const LEGAL_FORMS: Record<string, string> = {

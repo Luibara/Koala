@@ -1,14 +1,38 @@
 import type { AresSearchResult, AresRegistrace } from '@/types/company';
 
 const ARES_BASE = 'https://ares.gov.cz/ekonomicke-subjekty-v-be/rest';
+const DEFAULT_TIMEOUT = 12000;
 
-const DEFAULT_TIMEOUT = 10000;
-
-async function fetchWithTimeout(url: string, ms = DEFAULT_TIMEOUT) {
+async function aresPost<T>(path: string, body: Record<string, unknown>): Promise<T> {
   const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), ms);
+  const id = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT);
   try {
-    const res = await fetch(url, { signal: controller.signal, next: { revalidate: 300 } });
+    const res = await fetch(`${ARES_BASE}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+      next: { revalidate: 300 },
+    });
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      throw new Error(errBody?.popis ?? `ARES HTTP ${res.status}`);
+    }
+    return res.json();
+  } finally {
+    clearTimeout(id);
+  }
+}
+
+async function aresGet<T>(path: string): Promise<T> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT);
+  try {
+    const res = await fetch(`${ARES_BASE}${path}`, {
+      headers: { Accept: 'application/json' },
+      signal: controller.signal,
+      next: { revalidate: 300 },
+    });
     if (!res.ok) throw new Error(`ARES HTTP ${res.status}`);
     return res.json();
   } finally {
@@ -18,32 +42,23 @@ async function fetchWithTimeout(url: string, ms = DEFAULT_TIMEOUT) {
 
 export async function searchCompanies(params: {
   query?: string;
-  kodKraje?: string;
-  pocetPracovniku?: string;
+  kodKraje?: number;
   start?: number;
   pocet?: number;
 }): Promise<AresSearchResult> {
-  const url = new URL(`${ARES_BASE}/ekonomicke-subjekty`);
+  const body: Record<string, unknown> = {
+    start: params.start ?? 0,
+    pocet: params.pocet ?? 20,
+  };
 
-  if (params.query?.trim()) {
-    url.searchParams.set('obchodniJmeno', params.query.trim());
-  }
-  if (params.kodKraje) {
-    url.searchParams.set('sidlo.kodKraje', params.kodKraje);
-  }
-  if (params.pocetPracovniku) {
-    url.searchParams.set('statistickeUdaje.kodPoctuPracovniku', params.pocetPracovniku);
-  }
+  if (params.query?.trim()) body.obchodniJmeno = params.query.trim();
+  if (params.kodKraje) body.sidlo = { kodKraje: params.kodKraje };
 
-  url.searchParams.set('start', String(params.start ?? 0));
-  url.searchParams.set('pocet', String(params.pocet ?? 20));
-
-  return fetchWithTimeout(url.toString());
+  return aresPost<AresSearchResult>('/ekonomicke-subjekty/vyhledat', body);
 }
 
 export async function getCompanyDetail(ico: string): Promise<AresRegistrace> {
-  const url = `${ARES_BASE}/ekonomicke-subjekty/${ico}`;
-  return fetchWithTimeout(url);
+  return aresGet<AresRegistrace>(`/ekonomicke-subjekty/${ico}`);
 }
 
 export function formatAddress(sidlo: AresRegistrace['sidlo'] | undefined): string {
@@ -58,7 +73,7 @@ export function formatAddress(sidlo: AresRegistrace['sidlo'] | undefined): strin
     parts.push(street);
   }
   if (sidlo.nazevObce) parts.push(sidlo.nazevObce);
-  if (sidlo.psc) parts.push(sidlo.psc);
+  if (sidlo.psc) parts.push(String(sidlo.psc));
   return parts.join(', ') || 'Adresa neuvedena';
 }
 
@@ -73,9 +88,12 @@ export function formatPersonName(person: {
   return person.titulZa ? `${name}, ${person.titulZa}` : name;
 }
 
-export function getLegalFormLabel(kod?: string): string {
+export function getLegalFormLabel(kod?: string | number): string {
   const forms: Record<string, string> = {
+    '100': 'OSVČ',
     '101': 'OSVČ',
+    '105': 'OSVČ',
+    '107': 'OSVČ',
     '112': 's.r.o.',
     '121': 'a.s.',
     '141': 'o.p.s.',
@@ -83,5 +101,6 @@ export function getLegalFormLabel(kod?: string): string {
     '205': 'Spolek',
     '301': 'Příspěvková org.',
   };
-  return kod ? (forms[kod] ?? `Forma ${kod}`) : 'Neznámá forma';
+  const k = String(kod ?? '');
+  return k ? (forms[k] ?? `Forma ${k}`) : 'Neznámá forma';
 }
