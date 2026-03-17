@@ -13,9 +13,15 @@ import {
   Globe,
   Search,
   Linkedin,
+  FileText,
+  ShieldAlert,
+  ShieldCheck,
+  Banknote,
+  HeartHandshake,
 } from 'lucide-react';
-import { getCompanyDetail, formatAddress, formatPersonName, getLegalFormLabel } from '@/lib/ares';
+import { getCompanyDetail, getCompanyVrPeople, formatAddress, getLegalFormLabel } from '@/lib/ares';
 import { findFirmyCz } from '@/lib/firmy';
+import { getHlidacStats } from '@/lib/hlidac';
 import type { AresRegistrace } from '@/types/company';
 
 interface Props {
@@ -58,9 +64,13 @@ export default async function CompanyDetailPage({ params }: Props) {
     notFound();
   }
 
-  // Fetch firmy.cz enrichment in parallel (fire and forget if it fails)
+  // Fetch all external data in parallel
   const city = company.sidlo?.nazevObce;
-  const firmyCz = await findFirmyCz(company.obchodniJmeno, city);
+  const [firmyCz, hlidac, vrPeople] = await Promise.all([
+    findFirmyCz(company.obchodniJmeno, city),
+    getHlidacStats(ico),
+    getCompanyVrPeople(ico),
+  ]);
 
   const address = formatAddress(company.sidlo);
   const legalForm = getLegalFormLabel(company.pravniForma);
@@ -72,30 +82,8 @@ export default async function CompanyDetailPage({ params }: Props) {
       })
     : null;
 
-  // Collect all people from statutory bodies and shareholders
-  const allPeople: Array<{ name: string; role: string; address?: string }> = [];
-
-  if (company.statutarniOrgany) {
-    for (const organ of company.statutarniOrgany) {
-      for (const clen of organ.clenove ?? []) {
-        allPeople.push({
-          name: formatPersonName(clen),
-          role: clen.funkce ?? organ.nazev ?? 'Statutární orgán',
-          address: clen.adresa?.textovaAdresa ?? clen.adresa?.nazevObce,
-        });
-      }
-    }
-  }
-
-  if (company.spolecnici) {
-    for (const s of company.spolecnici) {
-      allPeople.push({
-        name: formatPersonName(s),
-        role: 'Společník',
-        address: s.adresa?.textovaAdresa ?? s.adresa?.nazevObce,
-      });
-    }
-  }
+  // People come from the VR (Veřejný rejstřík) endpoint
+  const allPeople = vrPeople;
 
   const naceActivities = company.czNace ?? [];
 
@@ -239,7 +227,7 @@ export default async function CompanyDetailPage({ params }: Props) {
                       <tr className="border-b border-gray-200 dark:border-gray-700">
                         <th className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 pb-2 uppercase tracking-wider">Jméno</th>
                         <th className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 pb-2 uppercase tracking-wider">Funkce</th>
-                        <th className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 pb-2 uppercase tracking-wider hidden md:table-cell">Adresa</th>
+                        <th className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 pb-2 uppercase tracking-wider hidden md:table-cell">Město</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -251,13 +239,87 @@ export default async function CompanyDetailPage({ params }: Props) {
                               {person.role}
                             </span>
                           </td>
-                          <td className="py-3 text-gray-500 dark:text-gray-400 text-xs hidden md:table-cell">{person.address ?? '—'}</td>
+                          <td className="py-3 text-gray-500 dark:text-gray-400 text-xs hidden md:table-cell">{person.city ?? '—'}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
               )}
+            </div>
+
+            {/* Hlídač státu */}
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5">
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <FileText className="w-4 h-4 text-gray-400" />
+                Hlídač státu
+              </h2>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                {/* Smlouvy */}
+                <div className="flex items-center gap-2.5 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/30 border border-gray-200 dark:border-gray-600">
+                  <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center shrink-0">
+                    <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Smlouvy</p>
+                    <p className="text-base font-bold text-gray-900 dark:text-white">{hlidac.smlouvyCount.toLocaleString('cs-CZ')}</p>
+                  </div>
+                </div>
+                {/* Dotace */}
+                <div className="flex items-center gap-2.5 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/30 border border-gray-200 dark:border-gray-600">
+                  <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center shrink-0">
+                    <Banknote className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Dotace</p>
+                    <p className="text-base font-bold text-gray-900 dark:text-white">{hlidac.dotaceCount.toLocaleString('cs-CZ')}</p>
+                  </div>
+                </div>
+                {/* Covid podpora */}
+                {hlidac.covidCount > 0 && (
+                  <div className="flex items-center gap-2.5 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800">
+                    <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center shrink-0">
+                      <HeartHandshake className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-amber-700 dark:text-amber-400">Covid podpora</p>
+                      <p className="text-base font-bold text-amber-900 dark:text-amber-300">{hlidac.covidCount}×</p>
+                    </div>
+                  </div>
+                )}
+                {/* Insolvence */}
+                <div className={`flex items-center gap-2.5 p-3 rounded-lg border ${
+                  hlidac.isInsolvent
+                    ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                    : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+                } ${hlidac.covidCount > 0 ? '' : 'col-span-1'}`}>
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                    hlidac.isInsolvent ? 'bg-red-100 dark:bg-red-900/30' : 'bg-green-100 dark:bg-green-900/30'
+                  }`}>
+                    {hlidac.isInsolvent
+                      ? <ShieldAlert className="w-4 h-4 text-red-600 dark:text-red-400" />
+                      : <ShieldCheck className="w-4 h-4 text-green-600 dark:text-green-400" />
+                    }
+                  </div>
+                  <div>
+                    <p className={`text-xs ${hlidac.isInsolvent ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'}`}>
+                      Insolvence
+                    </p>
+                    <p className={`text-sm font-semibold ${hlidac.isInsolvent ? 'text-red-700 dark:text-red-400' : 'text-green-700 dark:text-green-400'}`}>
+                      {hlidac.isInsolvent ? `${hlidac.insolvenceCount}× evidována` : 'Neevidována'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <a
+                href={`https://www.hlidacstatu.cz/Firma/${ico}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                Zobrazit na Hlídač státu
+              </a>
             </div>
 
             {/* Contact section */}

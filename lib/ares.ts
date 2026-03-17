@@ -61,6 +61,94 @@ export async function getCompanyDetail(ico: string): Promise<AresRegistrace> {
   return aresGet<AresRegistrace>(`/ekonomicke-subjekty/${ico}`);
 }
 
+export interface VrPerson {
+  name: string;
+  role: string;
+  city?: string;
+  ico?: string; // if legal entity
+}
+
+interface VrMemberOsoba {
+  datumVymazu?: string;
+  clenstvi?: { funkce?: { nazev?: string } };
+  nazevAngazma?: string;
+  fyzickaOsoba?: { jmeno?: string; prijmeni?: string; adresa?: { nazevObce?: string } };
+}
+
+interface VrSpolecnikOsoba {
+  datumVymazu?: string;
+  osoba?: {
+    fyzickaOsoba?: { jmeno?: string; prijmeni?: string };
+    pravnickaOsoba?: { obchodniJmeno?: string; ico?: string };
+  };
+}
+
+interface VrZaznam {
+  statutarniOrgany?: Array<{
+    nazevOrganu?: string;
+    clenoveOrganu?: VrMemberOsoba[];
+  }>;
+  spolecnici?: Array<{
+    spolecnik?: VrSpolecnikOsoba[];
+  }>;
+}
+
+interface VrResponse {
+  kod?: string;
+  zaznamy?: VrZaznam[];
+}
+
+export async function getCompanyVrPeople(ico: string): Promise<VrPerson[]> {
+  try {
+    const data = await aresGet<VrResponse>(`/ekonomicke-subjekty-vr/${ico}`);
+    if (data.kod === 'NENALEZENO' || !data.zaznamy?.length) return [];
+
+    const zaznam = data.zaznamy[0];
+    const people: VrPerson[] = [];
+
+    // Statutory body members
+    for (const organ of zaznam.statutarniOrgany ?? []) {
+      for (const clen of organ.clenoveOrganu ?? []) {
+        if (clen.datumVymazu) continue; // no longer active
+        const fo = clen.fyzickaOsoba;
+        if (!fo?.prijmeni && !fo?.jmeno) continue;
+        const name = [fo.jmeno, fo.prijmeni].filter(Boolean).join(' ');
+        const role = clen.clenstvi?.funkce?.nazev ?? clen.nazevAngazma ?? organ.nazevOrganu ?? 'Člen org.';
+        people.push({ name, role: capitalize(role), city: fo.adresa?.nazevObce });
+      }
+    }
+
+    // Shareholders / spolecnici
+    for (const group of zaznam.spolecnici ?? []) {
+      for (const s of group.spolecnik ?? []) {
+        if (s.datumVymazu) continue;
+        const fo = s.osoba?.fyzickaOsoba;
+        const po = s.osoba?.pravnickaOsoba;
+        if (fo?.prijmeni || fo?.jmeno) {
+          const name = [fo.jmeno, fo.prijmeni].filter(Boolean).join(' ');
+          people.push({ name, role: 'Společník' });
+        } else if (po?.obchodniJmeno) {
+          people.push({ name: po.obchodniJmeno, role: 'Společník (firma)', ico: po.ico });
+        }
+      }
+    }
+
+    // Deduplicate by name
+    const seen = new Set<string>();
+    return people.filter((p) => {
+      if (seen.has(p.name)) return false;
+      seen.add(p.name);
+      return true;
+    });
+  } catch {
+    return [];
+  }
+}
+
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 export function formatAddress(sidlo: AresRegistrace['sidlo'] | undefined): string {
   if (!sidlo) return 'Adresa neuvedena';
   if (sidlo.textovaAdresa) return sidlo.textovaAdresa;
