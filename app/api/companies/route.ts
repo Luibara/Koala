@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   const page = parseInt(searchParams.get('page') ?? '1', 10);
   const pageSize = 20;
 
-  if (!query.trim() && !region) {
+  if (!query.trim()) {
     return NextResponse.json({ pocetCelkem: 0, ekonomickeSubjekty: [] });
   }
 

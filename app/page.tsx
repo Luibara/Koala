@@ -25,7 +25,7 @@ export default function HomePage() {
   const abortRef = useRef<AbortController | null>(null);
 
   const fetchCompanies = useCallback(async (q: string, r: string, p: number) => {
-    if (!q.trim() && !r) {
+    if (!q.trim()) {
       setResults(null);
       setLoading(false);
       return;
@@ -83,7 +83,8 @@ export default function HomePage() {
   const handleRegionChange = (v: string) => { setRegion(v); setPage(1); };
   const handleQueryChange = (v: string) => { setQuery(v); setPage(1); };
 
-  const hasSearch = query.trim() || region;
+  const hasQuery = !!query.trim();
+  const hasSearch = hasQuery;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
@@ -137,8 +138,24 @@ export default function HomePage() {
             {/* Loading skeleton */}
             {loading && <LoadingSkeleton />}
 
-            {/* Empty state */}
-            {!loading && !hasSearch && (
+            {/* Empty state — region selected but no query */}
+            {!loading && !hasSearch && region && (
+              <div className="flex flex-col items-center justify-center py-24 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center mb-4">
+                  <Search className="w-8 h-8 text-blue-400" />
+                </div>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                  Kraj vybrán
+                </h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm leading-relaxed">
+                  ARES neumožňuje vypsat všechny firmy v kraji bez dalšího upřesnění.
+                  Zadejte název firmy a výsledky se automaticky omezí na vybraný kraj.
+                </p>
+              </div>
+            )}
+
+            {/* Empty state — no query, no region */}
+            {!loading && !hasSearch && !region && (
               <div className="flex flex-col items-center justify-center py-24 text-center">
                 <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center mb-4">
                   <Search className="w-8 h-8 text-blue-400" />
