@@ -10,7 +10,8 @@ export interface FirmyCzResult {
 function normalize(s: string): string {
   return s
     .toLowerCase()
-    .replace(/\b(s\.r\.o\.|a\.s\.|spol\.\s*s\s*r\.o\.|o\.p\.s\.|v\.o\.s\.|k\.s\.)\b/g, '')
+    // Strip legal suffixes regardless of word boundary (handles trailing dots correctly)
+    .replace(/\s*(s\.r\.o\.|a\.s\.|spol\.\s*s\s*r\.o\.|o\.p\.s\.|v\.o\.s\.|k\.s\.)\s*/g, ' ')
     .replace(/[,.\-–]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
