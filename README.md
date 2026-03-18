@@ -73,6 +73,8 @@ The spec asks for phone and email for owners and management. This is fundamental
 
 **2. No official source exists** — Even for legal entities (s.r.o., a.s.), Czech law does not require companies to register a phone number or email in ARES or OR. The company's *registered address* is public, but contact details are entirely voluntary. This means there is simply no authoritative data source — not because of an API limitation, but because the data is not collected.
 
+**What about scraping Firmy.cz?** This was investigated. The suggest API (used for name matching) does not return phone or email. The detail HTML page was also tested — phone numbers present in the HTML turned out to be call-tracking redirect numbers (not the company's real number), and no email address was found in the page source (likely rendered by JavaScript or intentionally omitted). Scraping would therefore return misleading data.
+
 **What the app does instead:** the detail page automatically matches the company on [Firmy.cz](https://www.firmy.cz) (the largest Czech business directory, with voluntary self-reported contacts) and links directly to its listing. For individual management members, direct search links are provided to LinkedIn, Google, and Hlídač státu, which is the closest practical solution within legal bounds.
 
 ### Management data for OSVČ
