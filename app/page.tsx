@@ -11,7 +11,6 @@ import LoadingSkeleton from '@/components/LoadingSkeleton';
 
 const PAGE_SIZE = 20;
 
-
 export default function HomePage() {
   const [query, setQuery] = useState('');
   const [region, setRegion] = useState('');
@@ -31,7 +30,6 @@ export default function HomePage() {
       return;
     }
 
-    // Cancel previous request
     abortRef.current?.abort();
     abortRef.current = new AbortController();
 
@@ -39,7 +37,7 @@ export default function HomePage() {
     setError(null);
 
     const params = new URLSearchParams();
-    if (q.trim()) params.set('query', q.trim());
+    params.set('query', q.trim());
     if (r) params.set('region', r);
     params.set('page', String(p));
 
@@ -61,36 +59,28 @@ export default function HomePage() {
     }
   }, []);
 
-  // Debounce on query/filter change, reset page
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       fetchCompanies(query, region, 1);
+      setPage(1);
     }, 350);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, region]);
 
-  // Immediate fetch on page change
   useEffect(() => {
-    if (page === 1) return; // already handled by filter effect
+    if (page === 1) return;
     fetchCompanies(query, region, page);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
-  const handleRegionChange = (v: string) => { setRegion(v); setPage(1); };
-  const handleQueryChange = (v: string) => { setQuery(v); setPage(1); };
-
-  const hasQuery = !!query.trim();
-  const hasSearch = hasQuery;
+  const hasSearch = !!query.trim();
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
-      {/* Header */}
       <header className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center shadow">
               <Building2 className="w-5 h-5 text-white" />
@@ -104,112 +94,84 @@ export default function HomePage() {
               </p>
             </div>
           </div>
-          <SearchBar value={query} onChange={handleQueryChange} />
+          <SearchBar value={query} onChange={(v) => { setQuery(v); setPage(1); }} />
         </div>
       </header>
 
-      {/* Main */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex flex-col lg:flex-row gap-6">
-          <FilterPanel
-            region={region}
-            onRegionChange={handleRegionChange}
-          />
-
+          <FilterPanel region={region} onRegionChange={(v) => { setRegion(v); setPage(1); }} />
           <div className="flex-1 min-w-0">
-            {/* Result count */}
-            {hasSearch && results && !loading && (
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                Nalezeno{' '}
-                <span className="font-semibold text-gray-900 dark:text-white">
-                  {results.pocetCelkem.toLocaleString('cs-CZ')}
-                </span>{' '}
-                firem
-              </p>
-            )}
+        {hasSearch && results && !loading && (
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            Nalezeno{' '}
+            <span className="font-semibold text-gray-900 dark:text-white">
+              {results.pocetCelkem.toLocaleString('cs-CZ')}
+            </span>{' '}
+            firem
+          </p>
+        )}
 
-            {/* Error */}
-            {error && (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-4 text-sm text-red-700 dark:text-red-400">
-                ⚠️ {error} — zkuste to prosím znovu.
-              </div>
-            )}
+        {error && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-4 text-sm text-red-700 dark:text-red-400">
+            ⚠️ {error} — zkuste to prosím znovu.
+          </div>
+        )}
 
-            {/* Loading skeleton */}
-            {loading && <LoadingSkeleton />}
+        {loading && <LoadingSkeleton />}
 
-            {/* Empty state — region selected but no query */}
-            {!loading && !hasSearch && region && (
-              <div className="flex flex-col items-center justify-center py-24 text-center">
-                <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center mb-4">
-                  <Search className="w-8 h-8 text-blue-400" />
-                </div>
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                  Kraj vybrán
-                </h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm leading-relaxed">
-                  ARES neumožňuje vypsat všechny firmy v kraji bez dalšího upřesnění.
-                  Zadejte název firmy a výsledky se automaticky omezí na vybraný kraj.
-                </p>
-              </div>
-            )}
+        {!loading && !hasSearch && (
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center mb-4">
+              <Search className="w-8 h-8 text-blue-400" />
+            </div>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              Vyhledejte firmu
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm leading-relaxed">
+              Zadejte název firmy. Data pocházejí z&nbsp;
+              <a
+                href="https://ares.gov.cz"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                ARES
+              </a>
+              .
+            </p>
+          </div>
+        )}
 
-            {/* Empty state — no query, no region */}
-            {!loading && !hasSearch && !region && (
-              <div className="flex flex-col items-center justify-center py-24 text-center">
-                <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center mb-4">
-                  <Search className="w-8 h-8 text-blue-400" />
-                </div>
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                  Vyhledejte firmu
-                </h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm leading-relaxed">
-                  Zadejte název firmy nebo vyberte kraj pomocí filtrů vlevo.
-                  Data pocházejí z&nbsp;
-                  <a
-                    href="https://ares.gov.cz"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 dark:text-blue-400 hover:underline"
-                  >
-                    ARES
-                  </a>
-                  .
-                </p>
-              </div>
-            )}
+        {!loading && hasSearch && results?.pocetCelkem === 0 && (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
+              <Building2 className="w-7 h-7 text-gray-400" />
+            </div>
+            <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-1">
+              Žádné výsledky
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Zkuste změnit hledaný výraz.
+            </p>
+          </div>
+        )}
 
-            {/* No results */}
-            {!loading && hasSearch && results?.pocetCelkem === 0 && (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
-                  <Building2 className="w-7 h-7 text-gray-400" />
-                </div>
-                <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-1">
-                  Žádné výsledky
-                </h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Zkuste změnit hledaný výraz nebo filtry.
-                </p>
-              </div>
-            )}
-
-            {/* Grid */}
-            {!loading && results && results.ekonomickeSubjekty.length > 0 && (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {results.ekonomickeSubjekty.map((company) => (
-                    <CompanyCard key={company.ico} company={company} />
-                  ))}
-                </div>
-                <Pagination
-                  page={page}
-                  total={results.pocetCelkem}
-                  pageSize={PAGE_SIZE}
-                  onChange={setPage}
-                />
-              </>
-            )}
+        {!loading && results && results.ekonomickeSubjekty.length > 0 && (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+              {results.ekonomickeSubjekty.map((company) => (
+                <CompanyCard key={company.ico} company={company} />
+              ))}
+            </div>
+            <Pagination
+              page={page}
+              total={results.pocetCelkem}
+              pageSize={PAGE_SIZE}
+              onChange={setPage}
+            />
+          </>
+        )}
           </div>
         </div>
       </main>

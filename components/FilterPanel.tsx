@@ -17,7 +17,6 @@ export default function FilterPanel({ region, onRegionChange }: Props) {
           <h2 className="font-semibold text-gray-900 dark:text-white text-sm">Filtry</h2>
         </div>
 
-        {/* Region filter */}
         <div>
           <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider">
             Kraj
@@ -35,13 +34,12 @@ export default function FilterPanel({ region, onRegionChange }: Props) {
           </select>
         </div>
 
-        {/* Reset */}
         {region && (
           <button
             onClick={() => onRegionChange('')}
             className="mt-5 w-full text-sm text-blue-600 dark:text-blue-400 hover:underline text-center"
           >
-            Zrušit filtry
+            Zrušit filtr
           </button>
         )}
       </div>

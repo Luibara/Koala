@@ -42,8 +42,7 @@ async function aresGet<T>(path: string): Promise<T> {
 
 export async function searchCompanies(params: {
   query?: string;
-  kodKraje?: number;
-  pocetPracovniku?: string;
+  financniUrad?: string[];
   start?: number;
   pocet?: number;
 }): Promise<AresSearchResult> {
@@ -53,8 +52,7 @@ export async function searchCompanies(params: {
   };
 
   if (params.query?.trim()) body.obchodniJmeno = params.query.trim();
-  if (params.kodKraje) body.sidlo = { kodKraje: params.kodKraje };
-  if (params.pocetPracovniku) body.statistickeUdaje = { pocetPracovniku: params.pocetPracovniku };
+  if (params.financniUrad?.length) body.financniUrad = params.financniUrad;
 
   return aresPost<AresSearchResult>('/ekonomicke-subjekty/vyhledat', body);
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { searchCompanies } from '@/lib/ares';
+import { REGION_FU_CODES } from '@/types/company';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -13,10 +14,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ pocetCelkem: 0, ekonomickeSubjekty: [] });
   }
 
+  const financniUrad = region ? REGION_FU_CODES[region] : undefined;
+
   try {
     const data = await searchCompanies({
       query: query || undefined,
-      kodKraje: region ? Number(region) : undefined,
+      financniUrad,
       start: (page - 1) * pageSize,
       pocet: pageSize,
     });
