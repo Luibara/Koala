@@ -27,7 +27,7 @@ A web application for browsing and searching companies registered in the Czech R
 | Framework | Next.js 15 (App Router) | SSR + API routes in one, TypeScript |
 | Styling | Tailwind CSS | Rapid, consistent design |
 | Icons | Lucide React | Lightweight, consistent |
-| Deploy | Vercel | Zero config, free tier |
+| Deploy | GCP Cloud Run | Docker-based, free tier, as specified |
 
 ## Data Sources
 
@@ -59,14 +59,24 @@ npm run dev
 
 ## Known Issues & Limitations
 
-### Turnover / Revenue data
-ARES does **not** contain financial data. Actual turnover figures are in annual reports on [Justice.cz](https://or.justice.cz), but that system has no official REST API and would require HTML scraping.
+### Turnover / Revenue filter
 
-### Phone numbers & emails
-Czech public registries do not store contact details (GDPR). The detail page links to the company's Firmy.cz listing (which has phones and web) and provides Google/LinkedIn search links as fallback.
+The spec asks to filter by turnover. ARES — the only free, official Czech company registry — does **not** contain any financial data. Actual revenue figures exist only in annual reports filed on [Justice.cz](https://or.justice.cz), but that system has no REST API; extracting data would require fragile HTML scraping of PDFs that are not consistently machine-readable.
+
+As a practical alternative, the app uses **employee count categories** (mikropodnik / malý / střední / velký) from ARES `statistickeUdaje` as a size proxy. This maps to EU SME definitions and gives a meaningful filter even without revenue data. The limitation is documented in the UI.
+
+### Phone numbers & emails — why even legal entities have no contacts
+
+The spec asks for phone and email for owners and management. This is fundamentally blocked by two overlapping constraints:
+
+**1. GDPR (Regulation EU 2016/679)** — Names of statutory body members (jednatele, členy představenstva) are published in the Obchodní rejstřík because Czech law (§ 48 zákona č. 304/2013 Sb.) explicitly requires it. Their personal phone numbers and emails are *not* required to be published and are therefore protected personal data under GDPR Art. 9. No public Czech registry is allowed to store or expose them.
+
+**2. No official source exists** — Even for legal entities (s.r.o., a.s.), Czech law does not require companies to register a phone number or email in ARES or OR. The company's *registered address* is public, but contact details are entirely voluntary. This means there is simply no authoritative data source — not because of an API limitation, but because the data is not collected.
+
+**What the app does instead:** the detail page automatically matches the company on [Firmy.cz](https://www.firmy.cz) (the largest Czech business directory, with voluntary self-reported contacts) and links directly to its listing. For individual management members, direct search links are provided to LinkedIn, Google, and Hlídač státu, which is the closest practical solution within legal bounds.
 
 ### Management data for OSVČ
-Sole traders (OSVČ) are not in the Obchodní rejstřík so no management/ownership data exists for them by design. The UI shows a fallback link to OR justice.
+Sole traders (OSVČ) are not recorded in the Obchodní rejstřík, so no management or ownership data exists for them by design. The UI shows a fallback link to the OR justice portal.
 
 ### ARES rate limiting
 ARES has undocumented rate limits. Under real traffic a Redis caching layer (5–10 min TTL) would be the right solution.
@@ -74,8 +84,7 @@ ARES has undocumented rate limits. Under real traffic a Redis caching layer (5�
 ## What I'd Do Differently With More Time
 
 - **Redis caching** to handle ARES rate limits at scale
-- **Justice.cz parsing** to extract actual turnover from annual reports
+- **Justice.cz parsing** to extract actual turnover from annual reports (HTML + PDF scraping)
 - **Map view** — plot companies geographically using Leaflet or Mapbox
 - **More filters** — legal form, NACE sector, founding year range
 - **CSV export** of search results
-- **Dockerfile** for GCP Cloud Run (alternative to Vercel)
