@@ -61,6 +61,24 @@ export async function getCompanyDetail(ico: string): Promise<AresRegistrace> {
   return aresGet<AresRegistrace>(`/ekonomicke-subjekty/${ico}`);
 }
 
+export interface RosContact {
+  telefon?: string;
+  email?: string;
+}
+
+export async function getCompanyRosContact(ico: string): Promise<RosContact | null> {
+  try {
+    const data = await aresGet<{
+      zaznamy?: Array<{ kontaktniUdaje?: { telefon?: string; email?: string } }>;
+    }>(`/ekonomicke-subjekty-ros/${ico}`);
+    const kontakt = data.zaznamy?.[0]?.kontaktniUdaje;
+    if (!kontakt?.telefon && !kontakt?.email) return null;
+    return { telefon: kontakt.telefon, email: kontakt.email };
+  } catch {
+    return null;
+  }
+}
+
 export interface VrPerson {
   name: string;
   role: string;

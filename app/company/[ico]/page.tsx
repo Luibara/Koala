@@ -10,6 +10,7 @@ import {
   Hash,
   AlertCircle,
   Phone,
+  Mail,
   Globe,
   Search,
   Linkedin,
@@ -19,7 +20,7 @@ import {
   Banknote,
   HeartHandshake,
 } from 'lucide-react';
-import { getCompanyDetail, getCompanyVrPeople, formatAddress, getLegalFormLabel } from '@/lib/ares';
+import { getCompanyDetail, getCompanyVrPeople, getCompanyRosContact, formatAddress, getLegalFormLabel } from '@/lib/ares';
 import { findFirmyCz } from '@/lib/firmy';
 import { getHlidacStats } from '@/lib/hlidac';
 import type { AresRegistrace } from '@/types/company';
@@ -66,10 +67,11 @@ export default async function CompanyDetailPage({ params }: Props) {
 
   // Fetch all external data in parallel
   const city = company.sidlo?.nazevObce;
-  const [firmyCz, hlidac, vrPeople] = await Promise.all([
+  const [firmyCz, hlidac, vrPeople, rosContact] = await Promise.all([
     findFirmyCz(company.obchodniJmeno, city),
     getHlidacStats(ico),
     getCompanyVrPeople(ico),
+    getCompanyRosContact(ico),
   ]);
 
   const address = formatAddress(company.sidlo);
@@ -393,6 +395,44 @@ export default async function CompanyDetailPage({ params }: Props) {
                 <Phone className="w-4 h-4 text-gray-400" />
                 Kontaktní údaje
               </h2>
+
+              {/* ROS official contact data — when available */}
+              {rosContact && (
+                <div className="mb-4 space-y-2">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                    Kontaktní údaje z <strong>ARES ROS</strong> (Registr osob):
+                  </p>
+                  {rosContact.telefon && (
+                    <a
+                      href={`tel:${rosContact.telefon.replace(/\s/g, '')}`}
+                      className="flex items-center gap-3 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-green-600 flex items-center justify-center shrink-0">
+                        <Phone className="w-4 h-4 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-green-700 dark:text-green-400">Telefon</p>
+                        <p className="text-sm font-semibold text-green-800 dark:text-green-300">{rosContact.telefon}</p>
+                      </div>
+                    </a>
+                  )}
+                  {rosContact.email && (
+                    <a
+                      href={`mailto:${rosContact.email}`}
+                      className="flex items-center gap-3 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-green-600 flex items-center justify-center shrink-0">
+                        <Mail className="w-4 h-4 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-green-700 dark:text-green-400">Email</p>
+                        <p className="text-sm font-semibold text-green-800 dark:text-green-300">{rosContact.email}</p>
+                      </div>
+                    </a>
+                  )}
+                  <div className="border-t border-gray-100 dark:border-gray-700 mt-3" />
+                </div>
+              )}
 
               {/* Firmy.cz match — if found */}
               {firmyCz ? (

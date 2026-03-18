@@ -2,7 +2,7 @@
 
 Webová aplikace pro vyhledávání a prohlížení firem registrovaných v České republice, postavená na Next.js 15.
 
-**Live demo:** [doplnit po nasazení na GCP]
+**Live demo:** *Není nasazeno — projekt nevyžaduje placený hosting; Dockerfile je připraven pro GCP Cloud Run (free tier). Spusťte lokálně podle návodu níže.*
 **Repozitář:** https://github.com/Luibara/Koala
 
 ---
@@ -35,7 +35,8 @@ Webová aplikace pro vyhledávání a prohlížení firem registrovaných v Čes
 |---|---|---|
 | [ARES](https://ares.gov.cz) | Název firmy, IČO, adresa, kraj, právní forma, datum vzniku, NACE | Žádná |
 | [ARES VR](https://ares.gov.cz) `/ekonomicke-subjekty-vr/{ico}` | Statutární orgány, společníci (data z OR) | Žádná |
-| [Firmy.cz](https://www.firmy.cz) | Telefon, web, email (přes suggest API) | Žádná |
+| [ARES ROS](https://ares.gov.cz) `/ekonomicke-subjekty-ros/{ico}` | Telefon a email firmy (pokud je zaregistrován v Registru osob) | Žádná |
+| [Firmy.cz](https://www.firmy.cz) | Odkaz na firemní profil (největší český firemní adresář) | Žádná |
 | [Hlídač státu](https://www.hlidacstatu.cz) | Smlouvy, dotace, covid podpora, insolvence | API token |
 
 Odpovědi jsou cachovány 1–5 minut přes Next.js `fetch` revalidation.
