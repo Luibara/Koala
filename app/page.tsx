@@ -42,6 +42,7 @@ export default function HomePage() {
     const params = new URLSearchParams();
     if (q.trim()) params.set('query', q.trim());
     if (r) params.set('region', r);
+    if (s !== 'all') params.set('size', s);
     params.set('page', String(p));
 
     try {
