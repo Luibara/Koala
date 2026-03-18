@@ -31,7 +31,10 @@ export async function findFirmyCz(
   city?: string
 ): Promise<FirmyCzResult | null> {
   try {
-    const phrase = encodeURIComponent(companyName);
+    const cleanName = companyName
+      .replace(/\s*(s\.r\.o\.|a\.s\.|spol\.\s*s\s*r\.o\.|o\.p\.s\.|v\.o\.s\.|k\.s\.)\s*/gi, ' ')
+      .trim();
+    const phrase = encodeURIComponent(cleanName);
     const res = await fetch(
       `https://www.firmy.cz/suggest?phrase=${phrase}&page_no=1&offset=0&limit=10&category_id=0&region_id=0`,
       {
