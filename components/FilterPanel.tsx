@@ -1,16 +1,14 @@
 'use client';
 
 import { SlidersHorizontal } from 'lucide-react';
-import { REGIONS, COMPANY_SIZES, type CompanySize } from '@/types/company';
+import { REGIONS } from '@/types/company';
 
 interface Props {
   region: string;
-  size: CompanySize;
   onRegionChange: (v: string) => void;
-  onSizeChange: (v: CompanySize) => void;
 }
 
-export default function FilterPanel({ region, size, onRegionChange, onSizeChange }: Props) {
+export default function FilterPanel({ region, onRegionChange }: Props) {
   return (
     <aside className="w-full lg:w-64 shrink-0">
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 sticky top-4">
@@ -20,7 +18,7 @@ export default function FilterPanel({ region, size, onRegionChange, onSizeChange
         </div>
 
         {/* Region filter */}
-        <div className="mb-5">
+        <div>
           <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider">
             Kraj
           </label>
@@ -37,43 +35,10 @@ export default function FilterPanel({ region, size, onRegionChange, onSizeChange
           </select>
         </div>
 
-        {/* Size / turnover proxy filter */}
-        <div>
-          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider">
-            Velikost podniku
-          </label>
-          <div className="space-y-1.5">
-            {(Object.entries(COMPANY_SIZES) as [CompanySize, { label: string }][]).map(
-              ([key, { label }]) => (
-                <label
-                  key={key}
-                  className="flex items-center gap-3 p-2.5 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <input
-                    type="radio"
-                    name="size"
-                    value={key}
-                    checked={size === key}
-                    onChange={() => onSizeChange(key)}
-                    className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
-                </label>
-              )
-            )}
-          </div>
-          <p className="mt-3 text-xs text-gray-400 dark:text-gray-500 leading-relaxed">
-            Přesná data o obratu nejsou veřejně dostupná v ARES — jako proxy slouží počet zaměstnanců.
-          </p>
-        </div>
-
         {/* Reset */}
-        {(region || size !== 'all') && (
+        {region && (
           <button
-            onClick={() => {
-              onRegionChange('');
-              onSizeChange('all');
-            }}
+            onClick={() => onRegionChange('')}
             className="mt-5 w-full text-sm text-blue-600 dark:text-blue-400 hover:underline text-center"
           >
             Zrušit filtry

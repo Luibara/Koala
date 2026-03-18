@@ -59,11 +59,11 @@ npm run dev
 
 ## Známé problémy a omezení
 
-### Filtr podle obratu
+### Filtr podle obratu / velikosti firmy
 
 Zadání požaduje filtrování podle obratu. ARES — jediný bezplatný, oficiální český firemní rejstřík — **neobsahuje žádná finanční data**. Skutečné údaje o obratu existují pouze ve výročních zprávách na [Justice.cz](https://or.justice.cz), ale tento systém nemá REST API; extrakce dat by vyžadovala nespolehlivý scraping HTML a PDF dokumentů, které nejsou konzistentně strojově čitelné.
 
-Jako praktická alternativa aplikace používá **kategorie počtu zaměstnanců** (mikropodnik / malý / střední / velký) z ARES `statistickeUdaje` jako proxy pro velikost firmy. Toto odpovídá EU SME definicím a poskytuje smysluplný filtr i bez dat o obratu. Omezení je zdokumentováno přímo v UI.
+Byl zkoumán filtr podle počtu zaměstnanců jako proxy. Po prostudování OpenAPI specifikace ARES (`/v3/api-docs`) bylo zjištěno, že endpoint `/ekonomicke-subjekty/vyhledat` **nepodporuje filtrování podle počtu zaměstnanců ani velikosti podniku** — toto pole v search API vůbec neexistuje. Dostupné filtry jsou pouze: `obchodniJmeno`, `ico`, `sidlo` (kraj/adresa), `pravniForma`, `financniUrad` a `czNace`. Filtr velikosti byl proto z UI odebrán, aby neváděl uživatele v omyl.
 
 ### Telefony a e-maily — proč ani právnické osoby kontakty nemají
 

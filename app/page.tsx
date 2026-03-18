@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Building2, Search } from 'lucide-react';
-import type { AresSearchResult, CompanySize } from '@/types/company';
+import type { AresSearchResult } from '@/types/company';
 import SearchBar from '@/components/SearchBar';
 import FilterPanel from '@/components/FilterPanel';
 import CompanyCard from '@/components/CompanyCard';
@@ -15,7 +15,6 @@ const PAGE_SIZE = 20;
 export default function HomePage() {
   const [query, setQuery] = useState('');
   const [region, setRegion] = useState('');
-  const [size, setSize] = useState<CompanySize>('all');
   const [page, setPage] = useState(1);
 
   const [results, setResults] = useState<AresSearchResult | null>(null);
@@ -25,7 +24,7 @@ export default function HomePage() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  const fetchCompanies = useCallback(async (q: string, r: string, s: CompanySize, p: number) => {
+  const fetchCompanies = useCallback(async (q: string, r: string, p: number) => {
     if (!q.trim() && !r) {
       setResults(null);
       setLoading(false);
@@ -42,7 +41,6 @@ export default function HomePage() {
     const params = new URLSearchParams();
     if (q.trim()) params.set('query', q.trim());
     if (r) params.set('region', r);
-    if (s !== 'all') params.set('size', s);
     params.set('page', String(p));
 
     try {
@@ -67,23 +65,22 @@ export default function HomePage() {
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      fetchCompanies(query, region, size, 1);
+      fetchCompanies(query, region, 1);
     }, 350);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, region, size]);
+  }, [query, region]);
 
   // Immediate fetch on page change
   useEffect(() => {
     if (page === 1) return; // already handled by filter effect
-    fetchCompanies(query, region, size, page);
+    fetchCompanies(query, region, page);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
   const handleRegionChange = (v: string) => { setRegion(v); setPage(1); };
-  const handleSizeChange = (v: CompanySize) => { setSize(v); setPage(1); };
   const handleQueryChange = (v: string) => { setQuery(v); setPage(1); };
 
   const hasSearch = query.trim() || region;
@@ -115,9 +112,7 @@ export default function HomePage() {
         <div className="flex flex-col lg:flex-row gap-6">
           <FilterPanel
             region={region}
-            size={size}
             onRegionChange={handleRegionChange}
-            onSizeChange={handleSizeChange}
           />
 
           <div className="flex-1 min-w-0">
