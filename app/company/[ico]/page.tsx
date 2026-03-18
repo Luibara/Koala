@@ -231,19 +231,52 @@ export default async function CompanyDetailPage({ params }: Props) {
                       </tr>
                     </thead>
                     <tbody>
-                      {allPeople.map((person, i) => (
-                        <tr key={i} className="border-b border-gray-100 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors">
-                          <td className="py-3 font-medium text-gray-900 dark:text-white pr-4">{person.name || '—'}</td>
-                          <td className="py-3 pr-4">
-                            <span className="text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full">
-                              {person.role}
-                            </span>
-                          </td>
-                          <td className="py-3 text-gray-500 dark:text-gray-400 text-xs hidden md:table-cell">{person.city ?? '—'}</td>
-                        </tr>
-                      ))}
+                      {allPeople.map((person, i) => {
+                        const personQuery = encodeURIComponent(`${person.name} ${company.obchodniJmeno}`);
+                        const linkedinUrl = `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(person.name)}`;
+                        const googleUrl = `https://www.google.com/search?q=${personQuery}`;
+                        const hlidacPersonUrl = `https://www.hlidacstatu.cz/hledat?q=${encodeURIComponent(person.name)}&tab=osoby`;
+                        return (
+                          <tr key={i} className="border-b border-gray-100 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors">
+                            <td className="py-3 pr-3">
+                              <p className="font-medium text-gray-900 dark:text-white text-sm">{person.name || '—'}</p>
+                              {/* Contact search links */}
+                              {person.name && (
+                                <div className="flex items-center gap-2 mt-1">
+                                  <a href={linkedinUrl} target="_blank" rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline">
+                                    <Linkedin className="w-3 h-3" />LinkedIn
+                                  </a>
+                                  <span className="text-gray-300 dark:text-gray-600">·</span>
+                                  <a href={googleUrl} target="_blank" rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:underline">
+                                    <Search className="w-3 h-3" />Google
+                                  </a>
+                                  <span className="text-gray-300 dark:text-gray-600">·</span>
+                                  <a href={hlidacPersonUrl} target="_blank" rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:underline">
+                                    <ExternalLink className="w-3 h-3" />Hlídač
+                                  </a>
+                                </div>
+                              )}
+                            </td>
+                            <td className="py-3 pr-4 align-top">
+                              <span className="text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full">
+                                {person.role}
+                              </span>
+                            </td>
+                            <td className="py-3 text-gray-500 dark:text-gray-400 text-xs hidden md:table-cell align-top">{person.city ?? '—'}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
+                  <div className="mt-3 flex gap-1.5 items-start p-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" />
+                    <p className="text-xs text-amber-700 dark:text-amber-500">
+                      Přímý telefon a email jednatelů nejsou v žádném veřejném registru ČR (GDPR). Použijte LinkedIn nebo Google pro vyhledání kontaktu.
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
