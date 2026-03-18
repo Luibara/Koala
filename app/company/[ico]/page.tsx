@@ -197,6 +197,38 @@ export default async function CompanyDetailPage({ params }: Props) {
                 </a>
               </div>
             </div>
+
+            {/* Map */}
+            {company.sidlo?.textovaAdresa && (
+              <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+                <div className="px-5 pt-4 pb-2">
+                  <h2 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-gray-400" />
+                    Poloha sídla
+                  </h2>
+                </div>
+                <iframe
+                  title="Mapa sídla firmy"
+                  width="100%"
+                  height="220"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  src={`https://maps.google.com/maps?q=${encodeURIComponent(company.sidlo.textovaAdresa)}&output=embed&z=15`}
+                  className="border-0 w-full"
+                />
+                <div className="px-5 py-2.5">
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(company.sidlo.textovaAdresa)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    Otevřít v Google Maps
+                  </a>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right column */}
