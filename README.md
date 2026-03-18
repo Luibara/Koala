@@ -1,92 +1,92 @@
-# Czech Companies Directory
+# Adresář českých firem
 
-A web application for browsing and searching companies registered in the Czech Republic, built with Next.js 15.
+Webová aplikace pro vyhledávání a prohlížení firem registrovaných v České republice, postavená na Next.js 15.
 
-**Live demo:** [add Vercel URL after deployment]
-**Repository:** https://github.com/Luibara/Koala
+**Live demo:** [doplnit po nasazení na GCP]
+**Repozitář:** https://github.com/Luibara/Koala
 
 ---
 
-## Features
+## Funkce
 
-- **Live search** by company name with debounce (no button needed)
-- **Filter** by region (all 14 Czech regions) and company size
-- **Company detail** page with:
-  - Management & ownership — jednatele, členy představenstva a společníky z Veřejného rejstříku
-  - NACE economic activities
-  - Links to ARES, Obchodní rejstřík, Živnostenský rejstřík
-  - Contact info via Firmy.cz (biggest CZ company directory with phones & web)
-- **Hlídač státu panel** — smlouvy se státem, dotace, covid podpora, insolvence
-- **Pagination** for large result sets
-- Responsive design, dark mode, loading skeletons
+- **Živé vyhledávání** podle názvu firmy s debounce (bez nutnosti klikat na tlačítko)
+- **Filtry** podle kraje (všech 14 krajů ČR) a velikosti podniku
+- **Detail firmy** obsahuje:
+  - Jednatelé, členové představenstva a společníci z Veřejného rejstříku
+  - Ekonomické činnosti (NACE)
+  - Přímé odkazy na ARES, Obchodní rejstřík, Živnostenský rejstřík
+  - Kontaktní informace přes Firmy.cz (největší český firemní adresář)
+- **Panel Hlídač státu** — smlouvy se státem, dotace, covid podpora, insolvence
+- **Stránkování** výsledků
+- Responzivní design, tmavý režim, shimmer loading skeletony
 
-## Tech Stack
+## Technologie
 
-| Layer | Choice | Why |
+| Vrstva | Volba | Důvod |
 |---|---|---|
-| Framework | Next.js 15 (App Router) | SSR + API routes in one, TypeScript |
-| Styling | Tailwind CSS | Rapid, consistent design |
-| Icons | Lucide React | Lightweight, consistent |
-| Deploy | GCP Cloud Run | Docker-based, free tier, as specified |
+| Framework | Next.js 15 (App Router) | SSR + API routes v jednom, TypeScript |
+| Styling | Tailwind CSS | Rychlý, konzistentní design |
+| Ikony | Lucide React | Lehká, konzistentní sada ikon |
+| Nasazení | GCP Cloud Run | Docker, free tier, dle zadání |
 
-## Data Sources
+## Datové zdroje
 
-| Source | Data provided | Auth |
+| Zdroj | Poskytovaná data | Autentizace |
 |---|---|---|
-| [ARES](https://ares.gov.cz) | Company name, IČO, address, region, legal form, founding date, NACE | None |
-| [ARES VR](https://ares.gov.cz) `/ekonomicke-subjekty-vr/{ico}` | Statutory bodies, shareholders (OR data) | None |
-| [Firmy.cz](https://www.firmy.cz) | Phone, web, email (via suggest API) | None |
+| [ARES](https://ares.gov.cz) | Název firmy, IČO, adresa, kraj, právní forma, datum vzniku, NACE | Žádná |
+| [ARES VR](https://ares.gov.cz) `/ekonomicke-subjekty-vr/{ico}` | Statutární orgány, společníci (data z OR) | Žádná |
+| [Firmy.cz](https://www.firmy.cz) | Telefon, web, email (přes suggest API) | Žádná |
 | [Hlídač státu](https://www.hlidacstatu.cz) | Smlouvy, dotace, covid podpora, insolvence | API token |
 
-Responses cached for 1–5 minutes via Next.js `fetch` revalidation.
+Odpovědi jsou cachovány 1–5 minut přes Next.js `fetch` revalidation.
 
-## Environment Variables
+## Proměnné prostředí
 
 ```env
-HLIDAC_STATU_TOKEN=your_token_here
+HLIDAC_STATU_TOKEN=váš_token
 ```
 
-Get a free token at [hlidacstatu.cz](https://www.hlidacstatu.cz/api).
+Bezplatný token získáte na [hlidacstatu.cz](https://www.hlidacstatu.cz/api).
 
-## Local Development
+## Lokální vývoj
 
 ```bash
 npm install
-# create .env.local with HLIDAC_STATU_TOKEN
+# vytvořte .env.local s HLIDAC_STATU_TOKEN
 npm run dev
-# open http://localhost:3000
+# otevřít http://localhost:3000
 ```
 
-## Known Issues & Limitations
+## Známé problémy a omezení
 
-### Turnover / Revenue filter
+### Filtr podle obratu
 
-The spec asks to filter by turnover. ARES — the only free, official Czech company registry — does **not** contain any financial data. Actual revenue figures exist only in annual reports filed on [Justice.cz](https://or.justice.cz), but that system has no REST API; extracting data would require fragile HTML scraping of PDFs that are not consistently machine-readable.
+Zadání požaduje filtrování podle obratu. ARES — jediný bezplatný, oficiální český firemní rejstřík — **neobsahuje žádná finanční data**. Skutečné údaje o obratu existují pouze ve výročních zprávách na [Justice.cz](https://or.justice.cz), ale tento systém nemá REST API; extrakce dat by vyžadovala nespolehlivý scraping HTML a PDF dokumentů, které nejsou konzistentně strojově čitelné.
 
-As a practical alternative, the app uses **employee count categories** (mikropodnik / malý / střední / velký) from ARES `statistickeUdaje` as a size proxy. This maps to EU SME definitions and gives a meaningful filter even without revenue data. The limitation is documented in the UI.
+Jako praktická alternativa aplikace používá **kategorie počtu zaměstnanců** (mikropodnik / malý / střední / velký) z ARES `statistickeUdaje` jako proxy pro velikost firmy. Toto odpovídá EU SME definicím a poskytuje smysluplný filtr i bez dat o obratu. Omezení je zdokumentováno přímo v UI.
 
-### Phone numbers & emails — why even legal entities have no contacts
+### Telefony a e-maily — proč ani právnické osoby kontakty nemají
 
-The spec asks for phone and email for owners and management. This is fundamentally blocked by two overlapping constraints:
+Zadání požaduje telefon a e-mail vlastníků a managementu. To je zásadně zablokováno dvěma překrývajícími se omezeními:
 
-**1. GDPR (Regulation EU 2016/679)** — Names of statutory body members (jednatele, členy představenstva) are published in the Obchodní rejstřík because Czech law (§ 48 zákona č. 304/2013 Sb.) explicitly requires it. Their personal phone numbers and emails are *not* required to be published and are therefore protected personal data under GDPR Art. 9. No public Czech registry is allowed to store or expose them.
+**1. GDPR (Nařízení EU 2016/679)** — Jména členů statutárních orgánů (jednatelů, členů představenstva) jsou zveřejňována v Obchodním rejstříku, protože to výslovně ukládá český zákon (§ 48 zákona č. 304/2013 Sb.). Jejich osobní telefonní čísla a e-maily zveřejňována *být nemusí* a jsou tedy chráněnými osobními údaji dle GDPR čl. 9. Žádný veřejný český rejstřík je nesmí ukládat ani zpřístupňovat.
 
-**2. No official source exists** — Even for legal entities (s.r.o., a.s.), Czech law does not require companies to register a phone number or email in ARES or OR. The company's *registered address* is public, but contact details are entirely voluntary. This means there is simply no authoritative data source — not because of an API limitation, but because the data is not collected.
+**2. Žádný officiální zdroj neexistuje** — Ani u právnických osob (s.r.o., a.s.) český zákon nepožaduje registraci telefonního čísla ani e-mailu v ARES nebo OR. Veřejně dostupná je pouze *sídlová adresa*; kontaktní údaje jsou zcela dobrovolné. Neexistuje tedy žádný autoritativní datový zdroj — ne kvůli omezení API, ale proto, že tato data vůbec nejsou sbírána.
 
-**What about scraping Firmy.cz?** This was investigated. The suggest API (used for name matching) does not return phone or email. The detail HTML page was also tested — phone numbers present in the HTML turned out to be call-tracking redirect numbers (not the company's real number), and no email address was found in the page source (likely rendered by JavaScript or intentionally omitted). Scraping would therefore return misleading data.
+**Byl zkoumán i scraping Firmy.cz.** Suggest API (používané pro párování názvů) telefon ani e-mail nevrací. Testovala se také HTML stránka detailu — telefonní čísla přítomná v HTML se ukázala jako call-tracking přesměrovací čísla (nikoli skutečné číslo firmy) a žádná e-mailová adresa v HTML nebyla nalezena (pravděpodobně renderována JavaScriptem nebo záměrně vynechána). Scraping by tedy vracel zavádějící data.
 
-**What the app does instead:** the detail page automatically matches the company on [Firmy.cz](https://www.firmy.cz) (the largest Czech business directory, with voluntary self-reported contacts) and links directly to its listing. For individual management members, direct search links are provided to LinkedIn, Google, and Hlídač státu, which is the closest practical solution within legal bounds.
+**Co aplikace dělá místo toho:** stránka detailu automaticky páruje firmu na [Firmy.cz](https://www.firmy.cz) (největší český firemní adresář s dobrovolně zadanými kontakty) a odkazuje přímo na její listing. Pro jednotlivé členy managementu jsou k dispozici přímé vyhledávací odkazy na LinkedIn, Google a Hlídač státu — což je nejbližší praktické řešení v rámci zákonných možností.
 
-### Management data for OSVČ
-Sole traders (OSVČ) are not recorded in the Obchodní rejstřík, so no management or ownership data exists for them by design. The UI shows a fallback link to the OR justice portal.
+### Data managementu pro OSVČ
+Fyzické osoby — podnikatelé (OSVČ) nejsou vedeny v Obchodním rejstříku, takže pro ně data o managementu ani vlastnictví ze zákona neexistují. UI zobrazuje záložní odkaz na OR justice.
 
-### ARES rate limiting
-ARES has undocumented rate limits. Under real traffic a Redis caching layer (5–10 min TTL) would be the right solution.
+### Rate limiting ARES
+ARES má nedokumentované rate limity. Při reálném provozu by správným řešením byla Redis cache (TTL 5–10 min).
 
-## What I'd Do Differently With More Time
+## Co bych udělal jinak s více časem
 
-- **Redis caching** to handle ARES rate limits at scale
-- **Justice.cz parsing** to extract actual turnover from annual reports (HTML + PDF scraping)
-- **Map view** — plot companies geographically using Leaflet or Mapbox
-- **More filters** — legal form, NACE sector, founding year range
-- **CSV export** of search results
+- **Redis cache** pro zvládnutí rate limitů ARES při větším provozu
+- **Parsování Justice.cz** pro extrakci skutečného obratu z výročních zpráv (HTML + PDF scraping)
+- **Mapové zobrazení** — vykreslení firem geograficky přes Leaflet nebo Mapbox
+- **Více filtrů** — právní forma, NACE sektor, rozsah roku vzniku
+- **Export do CSV** výsledků vyhledávání
